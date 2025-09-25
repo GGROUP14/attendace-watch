@@ -125,7 +125,39 @@ const Index = () => {
     // Simulate finding absent students outside after a delay
     setTimeout(() => {
       const absentStudents = students.filter(s => !s.isPresent && !s.hasPermission);
-      if (absentStudents.length > 0) {
+      
+      if (absentStudents.length > 2) {
+        // Show notifications for ALL students when more than 2 are detected
+        const newAlerts: Alert[] = absentStudents.map((student, index) => ({
+          id: `${Date.now()}-${index}`,
+          studentName: student.name,
+          timestamp: new Date().toLocaleTimeString(),
+          message: "Found outside without permission during class time"
+        }));
+        
+        setAlerts(prev => [...newAlerts, ...prev].slice(0, 8)); // Keep only 8 most recent alerts
+        
+        // Show toast notification for mass detection
+        toast({
+          title: "🚨 MASS ALERT - Multiple Students Detected",
+          description: `${absentStudents.length} students found outside without permission!`,
+          variant: "destructive",
+          duration: 8000,
+        });
+        
+        // Show individual toasts for each student after a short delay
+        absentStudents.forEach((student, index) => {
+          setTimeout(() => {
+            toast({
+              title: "🚨 Individual Alert",
+              description: `${student.name} detected outside without permission`,
+              variant: "destructive",
+              duration: 5000,
+            });
+          }, (index + 1) * 1000); // Stagger notifications by 1 second each
+        });
+      } else if (absentStudents.length > 0) {
+        // Original logic for 1-2 students
         const randomStudent = absentStudents[Math.floor(Math.random() * absentStudents.length)];
         const newAlert: Alert = {
           id: Date.now().toString(),
@@ -133,7 +165,7 @@ const Index = () => {
           timestamp: new Date().toLocaleTimeString(),
           message: "Found outside without permission during class time"
         };
-        setAlerts(prev => [newAlert, ...prev.slice(0, 4)]); // Keep only 5 most recent alerts
+        setAlerts(prev => [newAlert, ...prev.slice(0, 7)]); // Keep only 8 most recent alerts
         
         toast({
           title: "🚨 Student Alert",
