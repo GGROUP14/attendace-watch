@@ -126,8 +126,8 @@ const Index = () => {
     setTimeout(() => {
       const absentStudents = students.filter(s => !s.isPresent && !s.hasPermission);
       
-      if (absentStudents.length > 2) {
-        // Show notifications for ALL students when more than 2 are detected
+      if (absentStudents.length > 0) {
+        // Show notifications for ALL absent students when ANY detection occurs
         const newAlerts: Alert[] = absentStudents.map((student, index) => ({
           id: `${Date.now()}-${index}`,
           studentName: student.name,
@@ -137,10 +137,10 @@ const Index = () => {
         
         setAlerts(prev => [...newAlerts, ...prev].slice(0, 8)); // Keep only 8 most recent alerts
         
-        // Show toast notification for mass detection
+        // Show main toast notification
         toast({
-          title: "🚨 MASS ALERT - Multiple Students Detected",
-          description: `${absentStudents.length} students found outside without permission!`,
+          title: `🚨 ALERT - ${absentStudents.length} Student${absentStudents.length > 1 ? 's' : ''} Detected`,
+          description: `All absent students found outside without permission!`,
           variant: "destructive",
           duration: 8000,
         });
@@ -155,23 +155,6 @@ const Index = () => {
               duration: 5000,
             });
           }, (index + 1) * 1000); // Stagger notifications by 1 second each
-        });
-      } else if (absentStudents.length > 0) {
-        // Original logic for 1-2 students
-        const randomStudent = absentStudents[Math.floor(Math.random() * absentStudents.length)];
-        const newAlert: Alert = {
-          id: Date.now().toString(),
-          studentName: randomStudent.name,
-          timestamp: new Date().toLocaleTimeString(),
-          message: "Found outside without permission during class time"
-        };
-        setAlerts(prev => [newAlert, ...prev.slice(0, 7)]); // Keep only 8 most recent alerts
-        
-        toast({
-          title: "🚨 Student Alert",
-          description: `${randomStudent.name} detected outside without permission!`,
-          variant: "destructive",
-          duration: 5000,
         });
       }
     }, 10000); // Simulate detection after 10 seconds
