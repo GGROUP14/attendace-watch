@@ -121,6 +121,8 @@ const Index = () => {
         const isRecognized = Math.random() < 0.2;
         
         if (isRecognized && !alertedStudentsThisHour.has(student.id)) {
+          console.log(`Face recognized: ${student.name} - creating alert`);
+          
           // Add student to alerted list for this hour
           setAlertedStudentsThisHour(prev => new Set([...prev, student.id]));
           
@@ -167,6 +169,12 @@ const Index = () => {
   const handleSubmitAttendance = () => {
     setAttendanceSubmitted(true);
     setCameraActive(true);
+    
+    // Clear any existing alerts and reset hourly tracker
+    setAlerts([]);
+    setAlertedStudentsThisHour(new Set());
+    
+    console.log("Attendance submitted - monitoring will start in 1 second intervals");
     
     toast({
       title: "✅ Attendance Submitted",
