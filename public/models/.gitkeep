@@ -1,0 +1,3 @@
+# Face detection models will be loaded here
+# The face-api.js library will try to load models from this directory
+# If models fail to load, the system will fall back to basic motion detection

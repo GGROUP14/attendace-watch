@@ -106,49 +106,47 @@ const Index = () => {
     checkClassReminder();
   }, [currentTime, toast]);
 
-  // Real-time monitoring every second when camera is active
-  useEffect(() => {
-    if (!cameraActive || !attendanceSubmitted) return;
+  const [faceDetectionActive, setFaceDetectionActive] = useState(false);
 
-    const monitoringInterval = setInterval(() => {
-      // Simulate face recognition detection (random chance for each student)
-      const absentStudentsWithoutPermission = students.filter(
-        s => !s.isPresent && !s.hasPermission
-      );
+  // Handle face detection from camera
+  const handleFaceDetected = (detected: boolean) => {
+    setFaceDetectionActive(detected);
+    
+    if (!detected || !cameraActive || !attendanceSubmitted) return;
+    
+    // Only check students when a face is actually detected
+    const absentStudentsWithoutPermission = students.filter(
+      s => !s.isPresent && !s.hasPermission
+    );
 
-      absentStudentsWithoutPermission.forEach(student => {
-        // Simulate face recognition with 20% chance per second for each student
-        const isRecognized = Math.random() < 0.2;
+    // When face is detected, alert for any student without both attendance and permission
+    absentStudentsWithoutPermission.forEach(student => {
+      if (!alertedStudentsThisHour.has(student.id)) {
+        console.log(`Face detected in camera - alerting for ${student.name} (no attendance and no permission)`);
         
-        if (isRecognized && !alertedStudentsThisHour.has(student.id)) {
-          console.log(`Face recognized: ${student.name} - creating alert`);
-          
-          // Add student to alerted list for this hour
-          setAlertedStudentsThisHour(prev => new Set([...prev, student.id]));
-          
-          // Create alert
-          const newAlert: Alert = {
-            id: `${Date.now()}-${student.id}`,
-            studentName: student.name,
-            timestamp: new Date().toLocaleTimeString(),
-            message: "Face recognized outside without permission during class time"
-          };
-          
-          setAlerts(prev => [newAlert, ...prev.slice(0, 7)]);
-          
-          // Show toast notification
-          toast({
-            title: "🚨 Student Alert",
-            description: `${student.name} recognized outside without permission!`,
-            variant: "destructive",
-            duration: 5000,
-          });
-        }
-      });
-    }, 1000); // Monitor every second
-
-    return () => clearInterval(monitoringInterval);
-  }, [cameraActive, attendanceSubmitted, students, alertedStudentsThisHour, toast]);
+        // Add student to alerted list for this hour
+        setAlertedStudentsThisHour(prev => new Set([...prev, student.id]));
+        
+        // Create alert
+        const newAlert: Alert = {
+          id: `${Date.now()}-${student.id}`,
+          studentName: student.name,
+          timestamp: new Date().toLocaleTimeString(),
+          message: "Face detected - student absent without permission during class"
+        };
+        
+        setAlerts(prev => [newAlert, ...prev.slice(0, 7)]);
+        
+        // Show toast notification
+        toast({
+          title: "🚨 Student Alert",
+          description: `${student.name} detected outside without permission!`,
+          variant: "destructive",
+          duration: 5000,
+        });
+      }
+    });
+  };
 
   const handleAttendanceChange = (id: string, isPresent: boolean) => {
     setStudents(prev => 
@@ -272,6 +270,7 @@ const Index = () => {
                 isActive={cameraActive}
                 onToggleCamera={toggleCamera}
                 alerts={alerts}
+                onFaceDetected={handleFaceDetected}
               />
             </div>
           </div>
