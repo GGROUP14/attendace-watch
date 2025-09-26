@@ -66,14 +66,24 @@ const Index = () => {
   const [attendanceSubmitted, setAttendanceSubmitted] = useState(false);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [alertedStudentsThisHour, setAlertedStudentsThisHour] = useState<Set<string>>(new Set());
 
-  // Update current time every second
+  // Update current time every second and reset hourly alerts tracker
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentTime(new Date());
+      const newTime = new Date();
+      const currentHour = newTime.getHours();
+      const prevHour = currentTime.getHours();
+      
+      setCurrentTime(newTime);
+      
+      // Reset alerted students tracker when hour changes
+      if (currentHour !== prevHour) {
+        setAlertedStudentsThisHour(new Set());
+      }
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [currentTime]);
 
   // Check for class reminders
   useEffect(() => {
@@ -95,6 +105,48 @@ const Index = () => {
 
     checkClassReminder();
   }, [currentTime, toast]);
+
+  // Real-time monitoring every second when camera is active
+  useEffect(() => {
+    if (!cameraActive || !attendanceSubmitted) return;
+
+    const monitoringInterval = setInterval(() => {
+      // Simulate face recognition detection (random chance for each student)
+      const absentStudentsWithoutPermission = students.filter(
+        s => !s.isPresent && !s.hasPermission
+      );
+
+      absentStudentsWithoutPermission.forEach(student => {
+        // Simulate face recognition with 20% chance per second for each student
+        const isRecognized = Math.random() < 0.2;
+        
+        if (isRecognized && !alertedStudentsThisHour.has(student.id)) {
+          // Add student to alerted list for this hour
+          setAlertedStudentsThisHour(prev => new Set([...prev, student.id]));
+          
+          // Create alert
+          const newAlert: Alert = {
+            id: `${Date.now()}-${student.id}`,
+            studentName: student.name,
+            timestamp: new Date().toLocaleTimeString(),
+            message: "Face recognized outside without permission during class time"
+          };
+          
+          setAlerts(prev => [newAlert, ...prev.slice(0, 7)]);
+          
+          // Show toast notification
+          toast({
+            title: "🚨 Student Alert",
+            description: `${student.name} recognized outside without permission!`,
+            variant: "destructive",
+            duration: 5000,
+          });
+        }
+      });
+    }, 1000); // Monitor every second
+
+    return () => clearInterval(monitoringInterval);
+  }, [cameraActive, attendanceSubmitted, students, alertedStudentsThisHour, toast]);
 
   const handleAttendanceChange = (id: string, isPresent: boolean) => {
     setStudents(prev => 
@@ -118,46 +170,9 @@ const Index = () => {
     
     toast({
       title: "✅ Attendance Submitted",
-      description: "Camera monitoring has started automatically.",
+      description: "Real-time camera monitoring has started. Face recognition active.",
       duration: 3000,
     });
-
-    // Simulate finding absent students outside after a delay
-    setTimeout(() => {
-      const absentStudents = students.filter(s => !s.isPresent && !s.hasPermission);
-      
-      if (absentStudents.length > 0) {
-        // Show notifications for ALL absent students when ANY detection occurs
-        const newAlerts: Alert[] = absentStudents.map((student, index) => ({
-          id: `${Date.now()}-${index}`,
-          studentName: student.name,
-          timestamp: new Date().toLocaleTimeString(),
-          message: "Found outside without permission during class time"
-        }));
-        
-        setAlerts(prev => [...newAlerts, ...prev].slice(0, 8)); // Keep only 8 most recent alerts
-        
-        // Show main toast notification
-        toast({
-          title: `🚨 ALERT - ${absentStudents.length} Student${absentStudents.length > 1 ? 's' : ''} Detected`,
-          description: `All absent students found outside without permission!`,
-          variant: "destructive",
-          duration: 8000,
-        });
-        
-        // Show individual toasts for each student after a short delay
-        absentStudents.forEach((student, index) => {
-          setTimeout(() => {
-            toast({
-              title: "🚨 Individual Alert",
-              description: `${student.name} detected outside without permission`,
-              variant: "destructive",
-              duration: 5000,
-            });
-          }, (index + 1) * 1000); // Stagger notifications by 1 second each
-        });
-      }
-    }, 10000); // Simulate detection after 10 seconds
   };
 
   const toggleCamera = () => {
