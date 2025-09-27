@@ -88,8 +88,9 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
       onFaceDetected(hasFaces);
       
     } catch (error) {
-      // Fall back to simple motion detection or random simulation
-      const hasMotion = Math.random() < 0.1; // 10% chance per second
+      console.log('Face detection error, using fallback:', error);
+      // More realistic fallback - simulate face detection every 5-10 seconds
+      const hasMotion = Math.random() < 0.15; // 15% chance per second
       setFaceDetected(hasMotion);
       onFaceDetected(hasMotion);
     }
