@@ -12,14 +12,23 @@ interface Alert {
   message: string;
 }
 
+interface Student {
+  id: string;
+  name: string;
+  image: string;
+  isPresent: boolean;
+  hasPermission: boolean;
+}
+
 interface CameraMonitorProps {
   isActive: boolean;
   onToggleCamera: () => void;
   alerts: Alert[];
-  onFaceDetected: (detected: boolean) => void;
+  onFaceDetected: (detected: boolean, detectedStudentId?: string) => void;
+  students: Student[];
 }
 
-export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected }: CameraMonitorProps) => {
+export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected, students }: CameraMonitorProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -27,8 +36,9 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
   const [modelsLoaded, setModelsLoaded] = useState(false);
   const [faceDetected, setFaceDetected] = useState(false);
   const detectionIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [labeledDescriptors, setLabeledDescriptors] = useState<faceapi.LabeledFaceDescriptors[] | null>(null);
 
-  // Load face-api.js models
+  // Load face-api.js models and student descriptors
   useEffect(() => {
     const loadModels = async () => {
       try {
@@ -38,6 +48,9 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
           faceapi.nets.faceRecognitionNet.loadFromUri('/models')
         ]);
         setModelsLoaded(true);
+        
+        // Load student face descriptors
+        await loadStudentDescriptors();
       } catch (error) {
         console.error('Error loading face detection models:', error);
         // Continue without models - will fall back to basic detection
@@ -47,6 +60,38 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
     
     loadModels();
   }, []);
+
+  // Load student face descriptors for recognition
+  const loadStudentDescriptors = async () => {
+    try {
+      console.log("Loading student face descriptors...");
+      const descriptors = await Promise.all(
+        students.map(async (student) => {
+          try {
+            const img = await faceapi.fetchImage(student.image);
+            const detection = await faceapi
+              .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
+              .withFaceLandmarks()
+              .withFaceDescriptor();
+            
+            if (detection) {
+              return new faceapi.LabeledFaceDescriptors(student.id, [detection.descriptor]);
+            }
+            return null;
+          } catch (error) {
+            console.error(`Failed to load descriptor for ${student.name}:`, error);
+            return null;
+          }
+        })
+      );
+      
+      const validDescriptors = descriptors.filter(d => d !== null) as faceapi.LabeledFaceDescriptors[];
+      setLabeledDescriptors(validDescriptors);
+      console.log(`Loaded ${validDescriptors.length} student descriptors`);
+    } catch (error) {
+      console.error("Failed to load student descriptors:", error);
+    }
+  };
 
   useEffect(() => {
     if (isActive && modelsLoaded) {
@@ -67,7 +112,7 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
       const detections = await faceapi.detectAllFaces(
         videoRef.current,
         new faceapi.TinyFaceDetectorOptions()
-      );
+      ).withFaceLandmarks().withFaceDescriptors();
       
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
@@ -76,16 +121,32 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
         
         // Draw detection boxes
         detections.forEach(detection => {
-          const { x, y, width, height } = detection.box;
+          const { x, y, width, height } = detection.detection.box;
           ctx.strokeStyle = '#00ff00';
           ctx.lineWidth = 2;
           ctx.strokeRect(x, y, width, height);
         });
       }
+
+      let detectedStudentId: string | undefined;
+
+      if (detections.length > 0 && labeledDescriptors && labeledDescriptors.length > 0) {
+        // Try to recognize the face
+        const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.6);
+        
+        detections.forEach((detection) => {
+          const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
+          
+          if (bestMatch.label !== 'unknown') {
+            detectedStudentId = bestMatch.label;
+            console.log(`Recognized student: ${students.find(s => s.id === bestMatch.label)?.name} (distance: ${bestMatch.distance.toFixed(2)})`);
+          }
+        });
+      }
       
       const hasFaces = detections.length > 0;
       setFaceDetected(hasFaces);
-      onFaceDetected(hasFaces);
+      onFaceDetected(hasFaces, detectedStudentId);
       
     } catch (error) {
       console.log('Face detection error, using fallback:', error);
