@@ -118,10 +118,16 @@ const Index = () => {
     if (detectedStudentId) {
       const detectedStudent = students.find(s => s.id === detectedStudentId);
       
-      if (detectedStudent && !detectedStudent.isPresent && !detectedStudent.hasPermission && !alertedStudentsThisHour.has(detectedStudent.id)) {
+      if (detectedStudent && !detectedStudent.isPresent && !detectedStudent.hasPermission) {
+        // Check if this student was already alerted in this hour
+        if (alertedStudentsThisHour.has(detectedStudent.id)) {
+          console.log(`Student ${detectedStudent.name} already alerted this hour - skipping alert`);
+          return;
+        }
+        
         console.log(`Recognized student ${detectedStudent.name} - alerting (no attendance and no permission)`);
         
-        // Add student to alerted list for this hour
+        // Add student to alerted list for this hour BEFORE creating alert
         setAlertedStudentsThisHour(prev => new Set([...prev, detectedStudent.id]));
         
         // Create alert
@@ -138,38 +144,6 @@ const Index = () => {
         toast({
           title: "🚨 Student Alert",
           description: `${detectedStudent.name} detected outside without permission!`,
-          variant: "destructive",
-          duration: 5000,
-        });
-      }
-    } else {
-      // Fallback: if face detected but not recognized, alert for a random absent student
-      const absentStudentsWithoutPermission = students.filter(
-        s => !s.isPresent && !s.hasPermission && !alertedStudentsThisHour.has(s.id)
-      );
-
-      if (absentStudentsWithoutPermission.length > 0) {
-        const randomStudent = absentStudentsWithoutPermission[Math.floor(Math.random() * absentStudentsWithoutPermission.length)];
-        
-        console.log(`Unrecognized face detected - alerting for ${randomStudent.name} (fallback)`);
-        
-        // Add student to alerted list for this hour
-        setAlertedStudentsThisHour(prev => new Set([...prev, randomStudent.id]));
-        
-        // Create alert
-        const newAlert: Alert = {
-          id: `${Date.now()}-${randomStudent.id}`,
-          studentName: randomStudent.name,
-          timestamp: new Date().toLocaleTimeString(),
-          message: "Unrecognized face detected - student absent without permission"
-        };
-        
-        setAlerts(prev => [newAlert, ...prev.slice(0, 7)]);
-        
-        // Show toast notification
-        toast({
-          title: "🚨 Student Alert",
-          description: `${randomStudent.name} detected outside without permission!`,
           variant: "destructive",
           duration: 5000,
         });
