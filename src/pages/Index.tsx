@@ -6,7 +6,10 @@ import { StudentCard } from "@/components/StudentCard";
 import { ClassSchedule } from "@/components/ClassSchedule";
 import { CameraMonitor } from "@/components/CameraMonitor";
 import { AttendanceStats } from "@/components/AttendanceStats";
+import { AddStudentForm } from "@/components/AddStudentForm";
 import { GraduationCap, Save, AlertCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast as sonnerToast } from "sonner";
 
 // Import student images
 import studentBresto from "@/assets/student-bresto.jpg";
@@ -31,36 +34,39 @@ interface Alert {
 
 const Index = () => {
   const { toast } = useToast();
-  const [students, setStudents] = useState<Student[]>([
-    {
-      id: "1",
-      name: "Bresto K Benny",
-      image: studentBresto,
-      isPresent: false,
-      hasPermission: false,
-    },
-    {
-      id: "2", 
-      name: "Bestwin Paul",
-      image: studentBestwin,
-      isPresent: false,
-      hasPermission: false,
-    },
-    {
-      id: "3",
-      name: "Christo Sojan", 
-      image: studentChristo,
-      isPresent: false,
-      hasPermission: false,
-    },
-    {
-      id: "4",
-      name: "Christopher Biju",
-      image: studentChristopher,
-      isPresent: false,
-      hasPermission: false,
-    },
-  ]);
+  const [students, setStudents] = useState<Student[]>([]);
+
+  // Fetch students from database
+  const fetchStudents = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('students')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching students:', error);
+        return;
+      }
+
+      const formattedStudents: Student[] = data.map(student => ({
+        id: student.id,
+        name: student.name,
+        image: student.photo_url || "/placeholder.svg",
+        isPresent: student.is_present,
+        hasPermission: student.has_permission
+      }));
+
+      setStudents(formattedStudents);
+    } catch (error) {
+      console.error('Error fetching students:', error);
+    }
+  };
+
+  // Load students on component mount
+  useEffect(() => {
+    fetchStudents();
+  }, []);
 
   const [cameraActive, setCameraActive] = useState(false);
   const [attendanceSubmitted, setAttendanceSubmitted] = useState(false);
@@ -151,20 +157,52 @@ const Index = () => {
     }
   };
 
-  const handleAttendanceChange = (id: string, isPresent: boolean) => {
-    setStudents(prev => 
-      prev.map(student => 
-        student.id === id ? { ...student, isPresent } : student
-      )
-    );
+  const handleAttendanceChange = async (id: string, isPresent: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('students')
+        .update({ is_present: isPresent })
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error updating attendance:', error);
+        sonnerToast.error("Failed to update attendance");
+        return;
+      }
+
+      setStudents(prev => 
+        prev.map(student => 
+          student.id === id ? { ...student, isPresent } : student
+        )
+      );
+    } catch (error) {
+      console.error('Error updating attendance:', error);
+      sonnerToast.error("Failed to update attendance");
+    }
   };
 
-  const handlePermissionChange = (id: string, hasPermission: boolean) => {
-    setStudents(prev => 
-      prev.map(student => 
-        student.id === id ? { ...student, hasPermission } : student
-      )
-    );
+  const handlePermissionChange = async (id: string, hasPermission: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('students')
+        .update({ has_permission: hasPermission })
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error updating permission:', error);
+        sonnerToast.error("Failed to update permission");
+        return;
+      }
+
+      setStudents(prev => 
+        prev.map(student => 
+          student.id === id ? { ...student, hasPermission } : student
+        )
+      );
+    } catch (error) {
+      console.error('Error updating permission:', error);
+      sonnerToast.error("Failed to update permission");
+    }
   };
 
   const handleSubmitAttendance = () => {
@@ -268,6 +306,7 @@ const Index = () => {
 
             {/* Sidebar */}
             <div className="space-y-6">
+              <AddStudentForm onStudentAdded={fetchStudents} />
               <ClassSchedule />
               <CameraMonitor
                 isActive={cameraActive}
