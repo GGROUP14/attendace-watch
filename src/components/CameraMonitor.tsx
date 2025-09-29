@@ -65,8 +65,13 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
   const loadStudentDescriptors = async () => {
     try {
       console.log("Loading student face descriptors...");
+      // Filter out students without photos
+      const studentsWithPhotos = students.filter(student => 
+        student.image && student.image !== "/placeholder.svg" && student.image !== null
+      );
+      
       const descriptors = await Promise.all(
-        students.map(async (student) => {
+        studentsWithPhotos.map(async (student) => {
           try {
             const img = await faceapi.fetchImage(student.image);
             const detection = await faceapi

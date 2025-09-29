@@ -11,16 +11,11 @@ import { GraduationCap, Save, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast as sonnerToast } from "sonner";
 
-// Import student images
-import studentBresto from "@/assets/student-bresto.jpg";
-import studentBestwin from "@/assets/student-bestwin.jpg";
-import studentChristo from "@/assets/student-christo.jpg";
-import studentChristopher from "@/assets/student-christopher.jpg";
 
 interface Student {
   id: string;
   name: string;
-  image: string;
+  image: string | null;
   isPresent: boolean;
   hasPermission: boolean;
 }
