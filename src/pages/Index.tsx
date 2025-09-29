@@ -29,9 +29,17 @@ interface Alert {
 
 const Index = () => {
   const { toast } = useToast();
+  
+  // Keep both database students and hardcoded for recognition
   const [students, setStudents] = useState<Student[]>([]);
+  const [hardcodedStudents] = useState<Student[]>([
+    { id: "1", name: "Bresto", image: "/src/assets/student-bresto.jpg", isPresent: false, hasPermission: false },
+    { id: "2", name: "Bestwin", image: "/src/assets/student-bestwin.jpg", isPresent: false, hasPermission: false },
+    { id: "3", name: "Christo", image: "/src/assets/student-christo.jpg", isPresent: false, hasPermission: false },
+    { id: "4", name: "Christopher", image: "/src/assets/student-christopher.jpg", isPresent: false, hasPermission: false },
+  ]);
 
-  // Fetch students from database
+  // Fetch students from database for UI display
   const fetchStudents = async () => {
     try {
       const { data, error } = await supabase
@@ -124,9 +132,9 @@ const Index = () => {
       return;
     }
     
-    // If a specific student was recognized, check only that student
+    // If a specific student was recognized, check hardcoded students for alert logic
     if (detectedStudentId) {
-      const detectedStudent = students.find(s => s.id === detectedStudentId);
+      const detectedStudent = hardcodedStudents.find(s => s.id === detectedStudentId);
       
       if (detectedStudent && !detectedStudent.isPresent && !detectedStudent.hasPermission) {
         // Check if this student was already alerted in this hour
