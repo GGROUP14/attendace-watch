@@ -53,6 +53,7 @@ const Index = () => {
       }));
 
       setStudents(formattedStudents);
+      console.log('Students loaded:', formattedStudents.length, 'with photos:', formattedStudents.filter(s => s.image && s.image !== "/placeholder.svg").length);
     } catch (error) {
       console.error('Error fetching students:', error);
     }
@@ -86,7 +87,9 @@ const Index = () => {
     return () => clearInterval(timer);
   }, [currentTime]);
 
-  // Check for class reminders
+  // Check for class reminders - track last alerted minute to avoid spam
+  const [lastAlertedMinute, setLastAlertedMinute] = useState<string>("");
+  
   useEffect(() => {
     const checkClassReminder = () => {
       const schedule = [
@@ -95,7 +98,9 @@ const Index = () => {
       
       const currentTimeStr = currentTime.toTimeString().slice(0, 5);
       
-      if (schedule.includes(currentTimeStr)) {
+      // Only trigger if we haven't already alerted for this minute
+      if (schedule.includes(currentTimeStr) && currentTimeStr !== lastAlertedMinute) {
+        setLastAlertedMinute(currentTimeStr);
         toast({
           title: "⏰ Class Starting",
           description: "A new class has started! Please mark attendance.",
@@ -105,15 +110,19 @@ const Index = () => {
     };
 
     checkClassReminder();
-  }, [currentTime, toast]);
+  }, [currentTime, toast, lastAlertedMinute]);
 
   const [faceDetectionActive, setFaceDetectionActive] = useState(false);
 
   // Handle face detection from camera
   const handleFaceDetected = (detected: boolean, detectedStudentId?: string) => {
+    console.log('Face detection triggered:', { detected, detectedStudentId, cameraActive, attendanceSubmitted });
     setFaceDetectionActive(detected);
     
-    if (!detected || !cameraActive || !attendanceSubmitted) return;
+    if (!detected || !cameraActive || !attendanceSubmitted) {
+      console.log('Early return from face detection:', { detected, cameraActive, attendanceSubmitted });
+      return;
+    }
     
     // If a specific student was recognized, check only that student
     if (detectedStudentId) {
