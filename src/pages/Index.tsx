@@ -116,11 +116,11 @@ const Index = () => {
 
   // Handle face detection from camera
   const handleFaceDetected = (detected: boolean, detectedStudentId?: string) => {
-    console.log('Face detection triggered:', { detected, detectedStudentId, cameraActive, attendanceSubmitted });
+    console.log('Face detection triggered:', { detected, detectedStudentId, cameraActive });
     setFaceDetectionActive(detected);
     
-    if (!detected || !cameraActive || !attendanceSubmitted) {
-      console.log('Early return from face detection:', { detected, cameraActive, attendanceSubmitted });
+    if (!detected || !cameraActive) {
+      console.log('Early return from face detection:', { detected, cameraActive });
       return;
     }
     
