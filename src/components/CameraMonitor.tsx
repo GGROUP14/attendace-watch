@@ -65,17 +65,8 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
   const loadStudentDescriptors = async () => {
     try {
       console.log("Loading student face descriptors...");
-      
-      // Use students from assets for face recognition
-      const assetStudents = [
-        { id: "1", name: "Bresto", image: "/src/assets/student-bresto.jpg" },
-        { id: "2", name: "Bestwin", image: "/src/assets/student-bestwin.jpg" },
-        { id: "3", name: "Christo", image: "/src/assets/student-christo.jpg" },
-        { id: "4", name: "Christopher", image: "/src/assets/student-christopher.jpg" },
-      ];
-      
       const descriptors = await Promise.all(
-        assetStudents.map(async (student) => {
+        students.map(async (student) => {
           try {
             const img = await faceapi.fetchImage(student.image);
             const detection = await faceapi
@@ -84,10 +75,7 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
               .withFaceDescriptor();
             
             if (detection) {
-              console.log(`Successfully loaded descriptor for ${student.name}`);
               return new faceapi.LabeledFaceDescriptors(student.id, [detection.descriptor]);
-            } else {
-              console.warn(`No face detected for ${student.name}`);
             }
             return null;
           } catch (error) {
@@ -99,7 +87,7 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
       
       const validDescriptors = descriptors.filter(d => d !== null) as faceapi.LabeledFaceDescriptors[];
       setLabeledDescriptors(validDescriptors);
-      console.log(`Loaded ${validDescriptors.length} student descriptors for recognition`);
+      console.log(`Loaded ${validDescriptors.length} student descriptors`);
     } catch (error) {
       console.error("Failed to load student descriptors:", error);
     }

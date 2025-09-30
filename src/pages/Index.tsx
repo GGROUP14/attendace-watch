@@ -11,11 +11,16 @@ import { GraduationCap, Save, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast as sonnerToast } from "sonner";
 
+// Import student images
+import studentBresto from "@/assets/student-bresto.jpg";
+import studentBestwin from "@/assets/student-bestwin.jpg";
+import studentChristo from "@/assets/student-christo.jpg";
+import studentChristopher from "@/assets/student-christopher.jpg";
 
 interface Student {
   id: string;
   name: string;
-  image: string | null;
+  image: string;
   isPresent: boolean;
   hasPermission: boolean;
 }
@@ -29,17 +34,9 @@ interface Alert {
 
 const Index = () => {
   const { toast } = useToast();
-  
-  // Keep both database students and hardcoded for recognition
   const [students, setStudents] = useState<Student[]>([]);
-  const [hardcodedStudents] = useState<Student[]>([
-    { id: "1", name: "Bresto", image: "/src/assets/student-bresto.jpg", isPresent: false, hasPermission: false },
-    { id: "2", name: "Bestwin", image: "/src/assets/student-bestwin.jpg", isPresent: false, hasPermission: false },
-    { id: "3", name: "Christo", image: "/src/assets/student-christo.jpg", isPresent: false, hasPermission: false },
-    { id: "4", name: "Christopher", image: "/src/assets/student-christopher.jpg", isPresent: false, hasPermission: false },
-  ]);
 
-  // Fetch students from database for UI display
+  // Fetch students from database
   const fetchStudents = async () => {
     try {
       const { data, error } = await supabase
@@ -61,7 +58,6 @@ const Index = () => {
       }));
 
       setStudents(formattedStudents);
-      console.log('Students loaded:', formattedStudents.length, 'with photos:', formattedStudents.filter(s => s.image && s.image !== "/placeholder.svg").length);
     } catch (error) {
       console.error('Error fetching students:', error);
     }
@@ -95,9 +91,7 @@ const Index = () => {
     return () => clearInterval(timer);
   }, [currentTime]);
 
-  // Check for class reminders - track last alerted minute to avoid spam
-  const [lastAlertedMinute, setLastAlertedMinute] = useState<string>("");
-  
+  // Check for class reminders
   useEffect(() => {
     const checkClassReminder = () => {
       const schedule = [
@@ -106,9 +100,7 @@ const Index = () => {
       
       const currentTimeStr = currentTime.toTimeString().slice(0, 5);
       
-      // Only trigger if we haven't already alerted for this minute
-      if (schedule.includes(currentTimeStr) && currentTimeStr !== lastAlertedMinute) {
-        setLastAlertedMinute(currentTimeStr);
+      if (schedule.includes(currentTimeStr)) {
         toast({
           title: "⏰ Class Starting",
           description: "A new class has started! Please mark attendance.",
@@ -118,53 +110,36 @@ const Index = () => {
     };
 
     checkClassReminder();
-  }, [currentTime, toast, lastAlertedMinute]);
+  }, [currentTime, toast]);
 
   const [faceDetectionActive, setFaceDetectionActive] = useState(false);
 
   // Handle face detection from camera
   const handleFaceDetected = (detected: boolean, detectedStudentId?: string) => {
-    console.log('Face detection triggered:', { detected, detectedStudentId, cameraActive });
     setFaceDetectionActive(detected);
     
-    if (!detected || !cameraActive) {
-      console.log('Early return from face detection:', { detected, cameraActive });
-      return;
-    }
+    if (!detected || !cameraActive || !attendanceSubmitted) return;
     
-    // If a specific student was recognized, find them in database by matching name
+    // If a specific student was recognized, check only that student
     if (detectedStudentId) {
-      // First get the hardcoded student name from assets
-      const assetStudent = hardcodedStudents.find(s => s.id === detectedStudentId);
-      if (!assetStudent) {
-        console.log('Student not found in assets:', detectedStudentId);
-        return;
-      }
+      const detectedStudent = students.find(s => s.id === detectedStudentId);
       
-      // Then find the corresponding student in database by name
-      const dbStudent = students.find(s => s.name.toLowerCase() === assetStudent.name.toLowerCase());
-      if (!dbStudent) {
-        console.log(`Student ${assetStudent.name} not found in database - no alert needed`);
-        return;
-      }
-      
-      // Check if student has neither attendance nor duty leave
-      if (!dbStudent.isPresent && !dbStudent.hasPermission) {
+      if (detectedStudent && !detectedStudent.isPresent && !detectedStudent.hasPermission) {
         // Check if this student was already alerted in this hour
-        if (alertedStudentsThisHour.has(dbStudent.id)) {
-          console.log(`Student ${dbStudent.name} already alerted this hour - skipping alert`);
+        if (alertedStudentsThisHour.has(detectedStudent.id)) {
+          console.log(`Student ${detectedStudent.name} already alerted this hour - skipping alert`);
           return;
         }
         
-        console.log(`Recognized student ${dbStudent.name} - alerting (no attendance and no permission)`);
+        console.log(`Recognized student ${detectedStudent.name} - alerting (no attendance and no permission)`);
         
         // Add student to alerted list for this hour BEFORE creating alert
-        setAlertedStudentsThisHour(prev => new Set([...prev, dbStudent.id]));
+        setAlertedStudentsThisHour(prev => new Set([...prev, detectedStudent.id]));
         
         // Create alert
         const newAlert: Alert = {
-          id: `${Date.now()}-${dbStudent.id}`,
-          studentName: dbStudent.name,
+          id: `${Date.now()}-${detectedStudent.id}`,
+          studentName: detectedStudent.name,
           timestamp: new Date().toLocaleTimeString(),
           message: "Recognized student absent without permission during class"
         };
@@ -174,12 +149,10 @@ const Index = () => {
         // Show toast notification
         toast({
           title: "🚨 Student Alert",
-          description: `${dbStudent.name} detected outside without permission!`,
+          description: `${detectedStudent.name} detected outside without permission!`,
           variant: "destructive",
           duration: 5000,
         });
-      } else {
-        console.log(`Student ${dbStudent.name} has attendance or permission - no alert needed`);
       }
     }
   };
