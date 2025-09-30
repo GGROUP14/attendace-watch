@@ -132,26 +132,39 @@ const Index = () => {
       return;
     }
     
-    // If a specific student was recognized, check hardcoded students for alert logic
+    // If a specific student was recognized, find them in database by matching name
     if (detectedStudentId) {
-      const detectedStudent = hardcodedStudents.find(s => s.id === detectedStudentId);
+      // First get the hardcoded student name from assets
+      const assetStudent = hardcodedStudents.find(s => s.id === detectedStudentId);
+      if (!assetStudent) {
+        console.log('Student not found in assets:', detectedStudentId);
+        return;
+      }
       
-      if (detectedStudent && !detectedStudent.isPresent && !detectedStudent.hasPermission) {
+      // Then find the corresponding student in database by name
+      const dbStudent = students.find(s => s.name.toLowerCase() === assetStudent.name.toLowerCase());
+      if (!dbStudent) {
+        console.log(`Student ${assetStudent.name} not found in database - no alert needed`);
+        return;
+      }
+      
+      // Check if student has neither attendance nor duty leave
+      if (!dbStudent.isPresent && !dbStudent.hasPermission) {
         // Check if this student was already alerted in this hour
-        if (alertedStudentsThisHour.has(detectedStudent.id)) {
-          console.log(`Student ${detectedStudent.name} already alerted this hour - skipping alert`);
+        if (alertedStudentsThisHour.has(dbStudent.id)) {
+          console.log(`Student ${dbStudent.name} already alerted this hour - skipping alert`);
           return;
         }
         
-        console.log(`Recognized student ${detectedStudent.name} - alerting (no attendance and no permission)`);
+        console.log(`Recognized student ${dbStudent.name} - alerting (no attendance and no permission)`);
         
         // Add student to alerted list for this hour BEFORE creating alert
-        setAlertedStudentsThisHour(prev => new Set([...prev, detectedStudent.id]));
+        setAlertedStudentsThisHour(prev => new Set([...prev, dbStudent.id]));
         
         // Create alert
         const newAlert: Alert = {
-          id: `${Date.now()}-${detectedStudent.id}`,
-          studentName: detectedStudent.name,
+          id: `${Date.now()}-${dbStudent.id}`,
+          studentName: dbStudent.name,
           timestamp: new Date().toLocaleTimeString(),
           message: "Recognized student absent without permission during class"
         };
@@ -161,10 +174,12 @@ const Index = () => {
         // Show toast notification
         toast({
           title: "🚨 Student Alert",
-          description: `${detectedStudent.name} detected outside without permission!`,
+          description: `${dbStudent.name} detected outside without permission!`,
           variant: "destructive",
           duration: 5000,
         });
+      } else {
+        console.log(`Student ${dbStudent.name} has attendance or permission - no alert needed`);
       }
     }
   };

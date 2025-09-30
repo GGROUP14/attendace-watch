@@ -66,8 +66,8 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
     try {
       console.log("Loading student face descriptors...");
       
-      // Use hardcoded students that were working before
-      const hardcodedStudents = [
+      // Use students from assets for face recognition
+      const assetStudents = [
         { id: "1", name: "Bresto", image: "/src/assets/student-bresto.jpg" },
         { id: "2", name: "Bestwin", image: "/src/assets/student-bestwin.jpg" },
         { id: "3", name: "Christo", image: "/src/assets/student-christo.jpg" },
@@ -75,7 +75,7 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
       ];
       
       const descriptors = await Promise.all(
-        hardcodedStudents.map(async (student) => {
+        assetStudents.map(async (student) => {
           try {
             const img = await faceapi.fetchImage(student.image);
             const detection = await faceapi
