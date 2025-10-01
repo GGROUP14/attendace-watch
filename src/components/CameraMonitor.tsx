@@ -4,6 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Camera, CameraOff, AlertTriangle } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import * as faceapi from 'face-api.js';
+import studentBresto from "@/assets/student-bresto.jpg";
+import studentBestwin from "@/assets/student-bestwin.jpg";
+import studentChristo from "@/assets/student-christo.jpg";
+import studentChristopher from "@/assets/student-christopher.jpg";
 
 interface Alert {
   id: string;
@@ -68,10 +72,10 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
       
       // Use hardcoded asset images for face recognition
       const assetStudents = [
-        { name: "Bresto", image: "/src/assets/student-bresto.jpg" },
-        { name: "Bestwin", image: "/src/assets/student-bestwin.jpg" },
-        { name: "Christo", image: "/src/assets/student-christo.jpg" },
-        { name: "Christopher", image: "/src/assets/student-christopher.jpg" },
+        { name: "Bresto", image: studentBresto },
+        { name: "Bestwin", image: studentBestwin },
+        { name: "Christo", image: studentChristo },
+        { name: "Christopher", image: studentChristopher },
       ];
       
       const descriptors = await Promise.all(
