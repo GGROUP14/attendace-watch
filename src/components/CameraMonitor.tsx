@@ -65,8 +65,17 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
   const loadStudentDescriptors = async () => {
     try {
       console.log("Loading student face descriptors...");
+      
+      // Use hardcoded asset images for face recognition
+      const assetStudents = [
+        { name: "Bresto", image: "/src/assets/student-bresto.jpg" },
+        { name: "Bestwin", image: "/src/assets/student-bestwin.jpg" },
+        { name: "Christo", image: "/src/assets/student-christo.jpg" },
+        { name: "Christopher", image: "/src/assets/student-christopher.jpg" },
+      ];
+      
       const descriptors = await Promise.all(
-        students.map(async (student) => {
+        assetStudents.map(async (student) => {
           try {
             const img = await faceapi.fetchImage(student.image);
             const detection = await faceapi
@@ -75,7 +84,8 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
               .withFaceDescriptor();
             
             if (detection) {
-              return new faceapi.LabeledFaceDescriptors(student.id, [detection.descriptor]);
+              // Use student name as label for recognition
+              return new faceapi.LabeledFaceDescriptors(student.name, [detection.descriptor]);
             }
             return null;
           } catch (error) {
@@ -138,8 +148,9 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
           const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
           
           if (bestMatch.label !== 'unknown') {
+            // bestMatch.label is now the student name (Bresto, Bestwin, etc.)
             detectedStudentId = bestMatch.label;
-            console.log(`Recognized student: ${students.find(s => s.id === bestMatch.label)?.name} (distance: ${bestMatch.distance.toFixed(2)})`);
+            console.log(`Recognized student: ${bestMatch.label} (distance: ${bestMatch.distance.toFixed(2)})`);
           }
         });
       }
