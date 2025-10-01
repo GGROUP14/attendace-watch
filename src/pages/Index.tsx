@@ -115,14 +115,14 @@ const Index = () => {
   const [faceDetectionActive, setFaceDetectionActive] = useState(false);
 
   // Handle face detection from camera
-  const handleFaceDetected = (detected: boolean, detectedStudentName?: string) => {
+  const handleFaceDetected = (detected: boolean, detectedStudentId?: string) => {
     setFaceDetectionActive(detected);
     
     if (!detected || !cameraActive || !attendanceSubmitted) return;
     
-    // If a specific student was recognized by name, find them in database
-    if (detectedStudentName) {
-      const detectedStudent = students.find(s => s.name.toLowerCase() === detectedStudentName.toLowerCase());
+    // If a specific student was recognized, check only that student
+    if (detectedStudentId) {
+      const detectedStudent = students.find(s => s.id === detectedStudentId);
       
       if (detectedStudent && !detectedStudent.isPresent && !detectedStudent.hasPermission) {
         // Check if this student was already alerted in this hour

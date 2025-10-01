@@ -4,10 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Camera, CameraOff, AlertTriangle } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import * as faceapi from 'face-api.js';
-import studentBresto from "@/assets/student-bresto.jpg";
-import studentBestwin from "@/assets/student-bestwin.jpg";
-import studentChristo from "@/assets/student-christo.jpg";
-import studentChristopher from "@/assets/student-christopher.jpg";
 
 interface Alert {
   id: string;
@@ -63,23 +59,14 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
     };
     
     loadModels();
-  }, []);
+  }, [students]);
 
   // Load student face descriptors for recognition
   const loadStudentDescriptors = async () => {
     try {
       console.log("Loading student face descriptors...");
-      
-      // Use hardcoded asset images for face recognition
-      const assetStudents = [
-        { name: "Bresto", image: studentBresto },
-        { name: "Bestwin", image: studentBestwin },
-        { name: "Christo", image: studentChristo },
-        { name: "Christopher", image: studentChristopher },
-      ];
-      
       const descriptors = await Promise.all(
-        assetStudents.map(async (student) => {
+        students.map(async (student) => {
           try {
             const img = await faceapi.fetchImage(student.image);
             const detection = await faceapi
@@ -88,8 +75,7 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
               .withFaceDescriptor();
             
             if (detection) {
-              // Use student name as label for recognition
-              return new faceapi.LabeledFaceDescriptors(student.name, [detection.descriptor]);
+              return new faceapi.LabeledFaceDescriptors(student.id, [detection.descriptor]);
             }
             return null;
           } catch (error) {
