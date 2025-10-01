@@ -205,6 +205,27 @@ const Index = () => {
     }
   };
 
+  const handleDeleteStudent = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('students')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error deleting student:', error);
+        sonnerToast.error("Failed to delete student");
+        return;
+      }
+
+      setStudents(prev => prev.filter(student => student.id !== id));
+      sonnerToast.success("Student deleted successfully");
+    } catch (error) {
+      console.error('Error deleting student:', error);
+      sonnerToast.error("Failed to delete student");
+    }
+  };
+
   const handleSubmitAttendance = () => {
     setAttendanceSubmitted(true);
     setCameraActive(true);
@@ -298,6 +319,7 @@ const Index = () => {
                       {...student}
                       onAttendanceChange={handleAttendanceChange}
                       onPermissionChange={handlePermissionChange}
+                      onDelete={handleDeleteStudent}
                     />
                   ))}
                 </CardContent>
