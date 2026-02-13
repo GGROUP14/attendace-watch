@@ -153,6 +153,21 @@ const Index = () => {
           variant: "destructive",
           duration: 5000,
         });
+
+        // Send email alert
+        supabase.functions.invoke('send-alert-email', {
+          body: {
+            studentName: detectedStudent.name,
+            message: newAlert.message,
+            timestamp: newAlert.timestamp,
+          }
+        }).then(({ error }) => {
+          if (error) {
+            console.error('Failed to send email alert:', error);
+          } else {
+            console.log(`Email alert sent for ${detectedStudent.name}`);
+          }
+        });
       }
     }
   };
