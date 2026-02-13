@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -72,7 +72,7 @@ const Index = () => {
   const [attendanceSubmitted, setAttendanceSubmitted] = useState(false);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [alertedStudentsThisHour, setAlertedStudentsThisHour] = useState<Set<string>>(new Set());
+  const alertedStudentsThisHourRef = useRef<Set<string>>(new Set());
 
   // Update current time every second and reset hourly alerts tracker
   useEffect(() => {
@@ -85,7 +85,7 @@ const Index = () => {
       
       // Reset alerted students tracker when hour changes
       if (currentHour !== prevHour) {
-        setAlertedStudentsThisHour(new Set());
+        alertedStudentsThisHourRef.current = new Set();
       }
     }, 1000);
     return () => clearInterval(timer);
@@ -126,7 +126,7 @@ const Index = () => {
       
       if (detectedStudent && !detectedStudent.isPresent && !detectedStudent.hasPermission) {
         // Check if this student was already alerted in this hour
-        if (alertedStudentsThisHour.has(detectedStudent.id)) {
+        if (alertedStudentsThisHourRef.current.has(detectedStudent.id)) {
           console.log(`Student ${detectedStudent.name} already alerted this hour - skipping alert`);
           return;
         }
@@ -134,7 +134,7 @@ const Index = () => {
         console.log(`Recognized student ${detectedStudent.name} - alerting (no attendance and no permission)`);
         
         // Add student to alerted list for this hour BEFORE creating alert
-        setAlertedStudentsThisHour(prev => new Set([...prev, detectedStudent.id]));
+        alertedStudentsThisHourRef.current.add(detectedStudent.id);
         
         // Create alert
         const newAlert: Alert = {
@@ -232,7 +232,7 @@ const Index = () => {
     
     // Clear any existing alerts and reset hourly tracker
     setAlerts([]);
-    setAlertedStudentsThisHour(new Set());
+    alertedStudentsThisHourRef.current = new Set();
     
     console.log("Attendance submitted - monitoring will start in 1 second intervals");
     
