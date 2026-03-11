@@ -270,14 +270,6 @@ const Index = () => {
   };
 
   const toggleCamera = () => {
-    if (!attendanceSubmitted) {
-      toast({
-        title: "⚠️ Submit Attendance First",
-        description: "Please submit attendance before starting camera monitoring.",
-        variant: "destructive",
-      });
-      return;
-    }
     setCameraActive(!cameraActive);
   };
 
