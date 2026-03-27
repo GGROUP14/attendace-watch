@@ -74,6 +74,7 @@ const Index = () => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const alertedStudentsThisHourRef = useRef<Set<string>>(new Set());
+  const autoMarkedStudentsRef = useRef<Set<string>>(new Set());
 
   // Update current time every second and reset hourly alerts tracker
   useEffect(() => {
@@ -126,10 +127,10 @@ const Index = () => {
       if (!detectedStudent) return;
       
       // Auto-mark attendance only when autoMarkingActive (before submit)
-      if (autoMarkingActive && !attendanceSubmitted && !detectedStudent.isPresent) {
+      if (autoMarkingActive && !attendanceSubmitted && !detectedStudent.isPresent && !autoMarkedStudentsRef.current.has(detectedStudent.id)) {
+        autoMarkedStudentsRef.current.add(detectedStudent.id);
         handleAttendanceChange(detectedStudent.id, true);
         sonnerToast.success(`✅ ${detectedStudent.name} marked present via face recognition`);
-        console.log(`Auto-marked ${detectedStudent.name} as present`);
       }
     }
   };
