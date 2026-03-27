@@ -7,7 +7,7 @@ import { ClassSchedule } from "@/components/ClassSchedule";
 import { CameraMonitor } from "@/components/CameraMonitor";
 import { AttendanceStats } from "@/components/AttendanceStats";
 import { AddStudentForm } from "@/components/AddStudentForm";
-import { GraduationCap, Save, AlertCircle } from "lucide-react";
+import { GraduationCap, Save, AlertCircle, ScanFace } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast as sonnerToast } from "sonner";
 
@@ -70,6 +70,7 @@ const Index = () => {
 
   const [cameraActive, setCameraActive] = useState(false);
   const [attendanceSubmitted, setAttendanceSubmitted] = useState(false);
+  const [autoMarkingActive, setAutoMarkingActive] = useState(false);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const alertedStudentsThisHourRef = useRef<Set<string>>(new Set());
@@ -118,16 +119,16 @@ const Index = () => {
   const handleFaceDetected = (detected: boolean, detectedStudentId?: string) => {
     setFaceDetectionActive(detected);
     
-    if (!detected || !cameraActive || !attendanceSubmitted) return;
+    if (!detected || !cameraActive) return;
     
     if (detectedStudentId) {
       const detectedStudent = students.find(s => s.id === detectedStudentId);
       if (!detectedStudent) return;
       
-      // Auto-mark attendance for recognized student who is not yet present
-      if (!detectedStudent.isPresent && !detectedStudent.hasPermission) {
+      // Auto-mark attendance only when autoMarkingActive (before submit)
+      if (autoMarkingActive && !attendanceSubmitted && !detectedStudent.isPresent) {
         handleAttendanceChange(detectedStudent.id, true);
-        sonnerToast.success(`✅ ${detectedStudent.name} marked present automatically via face recognition`);
+        sonnerToast.success(`✅ ${detectedStudent.name} marked present via face recognition`);
         console.log(`Auto-marked ${detectedStudent.name} as present`);
       }
     }
@@ -202,8 +203,22 @@ const Index = () => {
     }
   };
 
+  // Handle auto-mark attendance via camera
+  const handleMarkAttendance = () => {
+    if (attendanceSubmitted) return;
+    setAutoMarkingActive(true);
+    setCameraActive(true);
+    
+    toast({
+      title: "📸 Auto Attendance Started",
+      description: "Camera is active. Students will be marked present when recognized.",
+      duration: 3000,
+    });
+  };
+
   const handleSubmitAttendance = () => {
     setAttendanceSubmitted(true);
+    setAutoMarkingActive(false);
     setCameraActive(true);
     
     // Clear any existing alerts and reset hourly tracker
@@ -214,7 +229,7 @@ const Index = () => {
     
     toast({
       title: "✅ Attendance Submitted",
-      description: "Real-time camera monitoring has started. Face recognition active.",
+      description: "Attendance locked. Real-time monitoring has started.",
       duration: 3000,
     });
   };
@@ -256,14 +271,24 @@ const Index = () => {
               </div>
             </div>
             
-            <Button 
-              onClick={handleSubmitAttendance}
-              disabled={attendanceSubmitted}
-              className="bg-success hover:bg-success/90"
-            >
-              <Save className="h-4 w-4 mr-2" />
-              {attendanceSubmitted ? "Attendance Submitted" : "Submit Attendance"}
-            </Button>
+            <div className="flex items-center space-x-2">
+              <Button 
+                onClick={handleMarkAttendance}
+                disabled={attendanceSubmitted || autoMarkingActive}
+                variant="outline"
+              >
+                <ScanFace className="h-4 w-4 mr-2" />
+                {autoMarkingActive ? "Marking..." : "Mark Attendance"}
+              </Button>
+              <Button 
+                onClick={handleSubmitAttendance}
+                disabled={attendanceSubmitted}
+                className="bg-success hover:bg-success/90"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {attendanceSubmitted ? "Attendance Submitted" : "Submit Attendance"}
+              </Button>
+            </div>
           </div>
         </div>
       </header>
