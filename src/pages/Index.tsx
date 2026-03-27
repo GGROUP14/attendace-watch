@@ -203,8 +203,22 @@ const Index = () => {
     }
   };
 
+  // Handle auto-mark attendance via camera
+  const handleMarkAttendance = () => {
+    if (attendanceSubmitted) return;
+    setAutoMarkingActive(true);
+    setCameraActive(true);
+    
+    toast({
+      title: "📸 Auto Attendance Started",
+      description: "Camera is active. Students will be marked present when recognized.",
+      duration: 3000,
+    });
+  };
+
   const handleSubmitAttendance = () => {
     setAttendanceSubmitted(true);
+    setAutoMarkingActive(false);
     setCameraActive(true);
     
     // Clear any existing alerts and reset hourly tracker
@@ -215,7 +229,7 @@ const Index = () => {
     
     toast({
       title: "✅ Attendance Submitted",
-      description: "Real-time camera monitoring has started. Face recognition active.",
+      description: "Attendance locked. Real-time monitoring has started.",
       duration: 3000,
     });
   };
