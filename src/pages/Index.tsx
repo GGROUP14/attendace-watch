@@ -124,6 +124,14 @@ const Index = () => {
     if (detectedStudentId) {
       const detectedStudent = students.find(s => s.id === detectedStudentId);
       
+      if (detectedStudent && !detectedStudent.isPresent) {
+        // Auto-mark attendance for recognized student
+        handleAttendanceChange(detectedStudent.id, true);
+        sonnerToast.success(`✅ ${detectedStudent.name} marked present automatically via face recognition`);
+        console.log(`Auto-marked ${detectedStudent.name} as present`);
+        return;
+      }
+
       if (detectedStudent && !detectedStudent.isPresent && !detectedStudent.hasPermission) {
         // Check if this student was already alerted in this hour
         if (alertedStudentsThisHourRef.current.has(detectedStudent.id)) {
