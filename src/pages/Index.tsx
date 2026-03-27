@@ -132,6 +132,38 @@ const Index = () => {
         handleAttendanceChange(detectedStudent.id, true);
         sonnerToast.success(`✅ ${detectedStudent.name} marked present via face recognition`);
       }
+      
+      // Post-submission monitoring: alert if recognized student is absent without permission
+      if (attendanceSubmitted && !detectedStudent.isPresent && !detectedStudent.hasPermission && !alertedStudentsThisHourRef.current.has(detectedStudent.id)) {
+        alertedStudentsThisHourRef.current.add(detectedStudent.id);
+        
+        const alertTime = new Date().toLocaleTimeString();
+        const newAlert: Alert = {
+          id: `${detectedStudent.id}-${Date.now()}`,
+          studentName: detectedStudent.name,
+          timestamp: alertTime,
+          message: `${detectedStudent.name} detected but marked absent without permission!`,
+        };
+        
+        setAlerts(prev => [newAlert, ...prev]);
+        
+        sonnerToast.warning(`⚠️ ${detectedStudent.name} detected but marked absent without permission!`);
+        
+        // Send alert email
+        supabase.functions.invoke('send-alert-email', {
+          body: {
+            studentName: detectedStudent.name,
+            timestamp: alertTime,
+            message: `${detectedStudent.name} was detected in the classroom but is marked absent without permission.`,
+          },
+        }).then(({ error }) => {
+          if (error) {
+            console.error('Failed to send alert email:', error);
+          } else {
+            console.log(`Alert email sent for ${detectedStudent.name}`);
+          }
+        });
+      }
     }
   };
 
