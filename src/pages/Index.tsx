@@ -70,6 +70,7 @@ const Index = () => {
 
   const [cameraActive, setCameraActive] = useState(false);
   const [attendanceSubmitted, setAttendanceSubmitted] = useState(false);
+  const [autoMarkingActive, setAutoMarkingActive] = useState(false);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const alertedStudentsThisHourRef = useRef<Set<string>>(new Set());
