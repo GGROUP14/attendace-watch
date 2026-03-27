@@ -120,62 +120,15 @@ const Index = () => {
     
     if (!detected || !cameraActive || !attendanceSubmitted) return;
     
-    // If a specific student was recognized, check only that student
     if (detectedStudentId) {
       const detectedStudent = students.find(s => s.id === detectedStudentId);
+      if (!detectedStudent) return;
       
-      if (detectedStudent && !detectedStudent.isPresent) {
-        // Auto-mark attendance for recognized student
+      // Auto-mark attendance for recognized student who is not yet present
+      if (!detectedStudent.isPresent && !detectedStudent.hasPermission) {
         handleAttendanceChange(detectedStudent.id, true);
         sonnerToast.success(`✅ ${detectedStudent.name} marked present automatically via face recognition`);
         console.log(`Auto-marked ${detectedStudent.name} as present`);
-        return;
-      }
-
-      if (detectedStudent && !detectedStudent.isPresent && !detectedStudent.hasPermission) {
-        // Check if this student was already alerted in this hour
-        if (alertedStudentsThisHourRef.current.has(detectedStudent.id)) {
-          console.log(`Student ${detectedStudent.name} already alerted this hour - skipping alert`);
-          return;
-        }
-        
-        console.log(`Recognized student ${detectedStudent.name} - alerting (no attendance and no permission)`);
-        
-        // Add student to alerted list for this hour BEFORE creating alert
-        alertedStudentsThisHourRef.current.add(detectedStudent.id);
-        
-        // Create alert
-        const newAlert: Alert = {
-          id: `${Date.now()}-${detectedStudent.id}`,
-          studentName: detectedStudent.name,
-          timestamp: new Date().toLocaleTimeString(),
-          message: "Recognized student absent without permission during class"
-        };
-        
-        setAlerts(prev => [newAlert, ...prev.slice(0, 7)]);
-        
-        // Show toast notification
-        toast({
-          title: "🚨 Student Alert",
-          description: `${detectedStudent.name} detected outside without permission!`,
-          variant: "destructive",
-          duration: 5000,
-        });
-
-        // Send email alert
-        supabase.functions.invoke('send-alert-email', {
-          body: {
-            studentName: detectedStudent.name,
-            message: newAlert.message,
-            timestamp: newAlert.timestamp,
-          }
-        }).then(({ error }) => {
-          if (error) {
-            console.error('Failed to send email alert:', error);
-          } else {
-            console.log(`Email alert sent for ${detectedStudent.name}`);
-          }
-        });
       }
     }
   };
