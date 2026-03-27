@@ -119,16 +119,16 @@ const Index = () => {
   const handleFaceDetected = (detected: boolean, detectedStudentId?: string) => {
     setFaceDetectionActive(detected);
     
-    if (!detected || !cameraActive || !attendanceSubmitted) return;
+    if (!detected || !cameraActive) return;
     
     if (detectedStudentId) {
       const detectedStudent = students.find(s => s.id === detectedStudentId);
       if (!detectedStudent) return;
       
-      // Auto-mark attendance for recognized student who is not yet present
-      if (!detectedStudent.isPresent && !detectedStudent.hasPermission) {
+      // Auto-mark attendance only when autoMarkingActive (before submit)
+      if (autoMarkingActive && !attendanceSubmitted && !detectedStudent.isPresent) {
         handleAttendanceChange(detectedStudent.id, true);
-        sonnerToast.success(`✅ ${detectedStudent.name} marked present automatically via face recognition`);
+        sonnerToast.success(`✅ ${detectedStudent.name} marked present via face recognition`);
         console.log(`Auto-marked ${detectedStudent.name} as present`);
       }
     }
