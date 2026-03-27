@@ -7,7 +7,7 @@ import { ClassSchedule } from "@/components/ClassSchedule";
 import { CameraMonitor } from "@/components/CameraMonitor";
 import { AttendanceStats } from "@/components/AttendanceStats";
 import { AddStudentForm } from "@/components/AddStudentForm";
-import { GraduationCap, Save, AlertCircle } from "lucide-react";
+import { GraduationCap, Save, AlertCircle, ScanFace } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast as sonnerToast } from "sonner";
 
