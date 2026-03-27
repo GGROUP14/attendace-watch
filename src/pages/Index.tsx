@@ -271,14 +271,24 @@ const Index = () => {
               </div>
             </div>
             
-            <Button 
-              onClick={handleSubmitAttendance}
-              disabled={attendanceSubmitted}
-              className="bg-success hover:bg-success/90"
-            >
-              <Save className="h-4 w-4 mr-2" />
-              {attendanceSubmitted ? "Attendance Submitted" : "Submit Attendance"}
-            </Button>
+            <div className="flex items-center space-x-2">
+              <Button 
+                onClick={handleMarkAttendance}
+                disabled={attendanceSubmitted || autoMarkingActive}
+                variant="outline"
+              >
+                <ScanFace className="h-4 w-4 mr-2" />
+                {autoMarkingActive ? "Marking..." : "Mark Attendance"}
+              </Button>
+              <Button 
+                onClick={handleSubmitAttendance}
+                disabled={attendanceSubmitted}
+                className="bg-success hover:bg-success/90"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {attendanceSubmitted ? "Attendance Submitted" : "Submit Attendance"}
+              </Button>
+            </div>
           </div>
         </div>
       </header>
