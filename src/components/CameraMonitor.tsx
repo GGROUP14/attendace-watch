@@ -69,11 +69,19 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
         students.map(async (student) => {
           try {
             const img = await faceapi.fetchImage(student.image);
-            const detection = await faceapi
-              .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
+            // Try SSD MobileNet first (more accurate), fall back to TinyFaceDetector
+            let detection = await faceapi
+              .detectSingleFace(img, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.3 }))
               .withFaceLandmarks()
               .withFaceDescriptor();
             
+            if (!detection) {
+              detection = await faceapi
+                .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: 0.3 }))
+                .withFaceLandmarks()
+                .withFaceDescriptor();
+            }
+
             if (detection) {
               return new faceapi.LabeledFaceDescriptors(student.id, [detection.descriptor]);
             }
@@ -109,11 +117,20 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
     if (!videoRef.current || !canvasRef.current) return;
     
     try {
-      const detections = await faceapi.detectAllFaces(
+      // Use SSD MobileNet for live detection (more accurate)
+      let detections = await faceapi.detectAllFaces(
         videoRef.current,
-        new faceapi.TinyFaceDetectorOptions()
+        new faceapi.SsdMobilenetv1Options({ minConfidence: 0.3 })
       ).withFaceLandmarks().withFaceDescriptors();
       
+      // Fallback to TinyFaceDetector if no faces found
+      if (detections.length === 0) {
+        detections = await faceapi.detectAllFaces(
+          videoRef.current,
+          new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: 0.3 })
+        ).withFaceLandmarks().withFaceDescriptors();
+      }
+
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
       if (ctx) {
@@ -132,7 +149,7 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
 
       if (detections.length > 0 && labeledDescriptors && labeledDescriptors.length > 0) {
         // Try to recognize the face
-        const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.6);
+        const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.5);
         
         detections.forEach((detection) => {
           const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
