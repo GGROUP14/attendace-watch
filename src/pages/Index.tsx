@@ -238,7 +238,14 @@ const Index = () => {
 
   // Handle auto-mark attendance via camera
   const handleMarkAttendance = () => {
-    setAttendanceSubmitted(false);
+    if (attendanceSubmitted) {
+      toast({
+        title: "⚠️ Attendance Already Submitted",
+        description: "Attendance is locked. Monitoring is active for alerts.",
+        variant: "destructive",
+      });
+      return;
+    }
     setAutoMarkingActive(true);
     autoMarkedStudentsRef.current = new Set();
     setCameraActive(true);
