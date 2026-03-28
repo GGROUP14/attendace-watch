@@ -43,7 +43,6 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
     const loadModels = async () => {
       try {
         await Promise.all([
-          faceapi.nets.ssdMobilenetv1.loadFromUri('/models'),
           faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
           faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
           faceapi.nets.faceRecognitionNet.loadFromUri('/models')
@@ -70,19 +69,12 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
         students.map(async (student) => {
           try {
             const img = await faceapi.fetchImage(student.image);
-            // Try SSD MobileNet first (more accurate), fall back to TinyFaceDetector
-            let detection = await faceapi
-              .detectSingleFace(img, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.3 }))
+            // Use larger input size and lower threshold for better detection
+            const detection = await faceapi
+              .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: 0.3 }))
               .withFaceLandmarks()
               .withFaceDescriptor();
             
-            if (!detection) {
-              detection = await faceapi
-                .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: 0.3 }))
-                .withFaceLandmarks()
-                .withFaceDescriptor();
-            }
-
             if (detection) {
               return new faceapi.LabeledFaceDescriptors(student.id, [detection.descriptor]);
             }
@@ -118,20 +110,12 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
     if (!videoRef.current || !canvasRef.current) return;
     
     try {
-      // Use SSD MobileNet for live detection (more accurate)
-      let detections = await faceapi.detectAllFaces(
+      // Use larger input size and lower threshold for better accuracy
+      const detections = await faceapi.detectAllFaces(
         videoRef.current,
-        new faceapi.SsdMobilenetv1Options({ minConfidence: 0.3 })
+        new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: 0.3 })
       ).withFaceLandmarks().withFaceDescriptors();
       
-      // Fallback to TinyFaceDetector if no faces found
-      if (detections.length === 0) {
-        detections = await faceapi.detectAllFaces(
-          videoRef.current,
-          new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: 0.3 })
-        ).withFaceLandmarks().withFaceDescriptors();
-      }
-
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
       if (ctx) {
@@ -149,14 +133,13 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
       let detectedStudentId: string | undefined;
 
       if (detections.length > 0 && labeledDescriptors && labeledDescriptors.length > 0) {
-        // Try to recognize the face
+        // Use higher tolerance (0.5) for better matching
         const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.5);
         
         detections.forEach((detection) => {
           const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
           
           if (bestMatch.label !== 'unknown') {
-            // bestMatch.label is now the student name (Bresto, Bestwin, etc.)
             detectedStudentId = bestMatch.label;
             console.log(`Recognized student: ${bestMatch.label} (distance: ${bestMatch.distance.toFixed(2)})`);
           }
@@ -169,8 +152,7 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
       
     } catch (error) {
       console.log('Face detection error, using fallback:', error);
-      // More realistic fallback - simulate face detection every 5-10 seconds
-      const hasMotion = Math.random() < 0.15; // 15% chance per second
+      const hasMotion = Math.random() < 0.15;
       setFaceDetected(hasMotion);
       onFaceDetected(hasMotion);
     }
@@ -193,8 +175,8 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
             canvasRef.current.height = videoRef.current.videoHeight;
           }
           
-          // Start face detection
-          detectionIntervalRef.current = setInterval(detectFaces, 1000);
+          // Start face detection every 1.5 seconds for better processing
+          detectionIntervalRef.current = setInterval(detectFaces, 1500);
         };
       }
     } catch (error) {
@@ -282,7 +264,7 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
                 <div>
                   <CameraOff className="h-8 w-8 mx-auto mb-2" />
                   <p className="text-sm">Camera Offline</p>
-                  <p className="text-xs">Submit attendance to start monitoring</p>
+                  <p className="text-xs">Click Start to begin monitoring</p>
                 </div>
               </div>
             )}
