@@ -258,7 +258,9 @@ const Index = () => {
 
   const handleSubmitAttendance = () => {
     setAttendanceSubmitted(true);
+    attendanceSubmittedRef.current = true;
     setAutoMarkingActive(false);
+    autoMarkingActiveRef.current = false;
     setCameraActive(true);
     
     // Clear any existing alerts and reset hourly tracker
