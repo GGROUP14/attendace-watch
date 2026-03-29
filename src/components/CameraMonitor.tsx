@@ -166,8 +166,8 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
             canvasRef.current.height = videoRef.current.videoHeight;
           }
           
-          // Start face detection every 1.5 seconds for better processing
-          detectionIntervalRef.current = setInterval(detectFaces, 1500);
+          // Detect every 800ms for faster response
+          detectionIntervalRef.current = setInterval(detectFaces, 800);
         };
       }
     } catch (error) {
