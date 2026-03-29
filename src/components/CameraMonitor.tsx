@@ -35,9 +35,11 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [modelsLoaded, setModelsLoaded] = useState(false);
   const [faceDetected, setFaceDetected] = useState(false);
-  const detectionIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const detectionIntervalRef = useRef<number | null>(null);
   const [labeledDescriptors, setLabeledDescriptors] = useState<faceapi.LabeledFaceDescriptors[] | null>(null);
   const faceMatcherRef = useRef<faceapi.FaceMatcher | null>(null);
+  const isDetectingRef = useRef(false);
+  const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Load face-api.js models
   useEffect(() => {
