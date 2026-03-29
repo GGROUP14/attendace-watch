@@ -37,23 +37,21 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
   const [faceDetected, setFaceDetected] = useState(false);
   const detectionIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [labeledDescriptors, setLabeledDescriptors] = useState<faceapi.LabeledFaceDescriptors[] | null>(null);
+  const faceMatcherRef = useRef<faceapi.FaceMatcher | null>(null);
 
-  // Load face-api.js models and student descriptors
+  // Load face-api.js models
   useEffect(() => {
     const loadModels = async () => {
       try {
         await Promise.all([
-          faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+          faceapi.nets.ssdMobilenetv1.loadFromUri('/models'),
           faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
           faceapi.nets.faceRecognitionNet.loadFromUri('/models')
         ]);
         setModelsLoaded(true);
-        
-        // Load student face descriptors
         await loadStudentDescriptors();
       } catch (error) {
         console.error('Error loading face detection models:', error);
-        // Continue without models - will fall back to basic detection
         setModelsLoaded(true);
       }
     };
@@ -69,9 +67,8 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
         students.map(async (student) => {
           try {
             const img = await faceapi.fetchImage(student.image);
-            // Use larger input size and lower threshold for better detection
             const detection = await faceapi
-              .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: 0.3 }))
+              .detectSingleFace(img, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.3 }))
               .withFaceLandmarks()
               .withFaceDescriptor();
             
@@ -88,6 +85,10 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
       
       const validDescriptors = descriptors.filter(d => d !== null) as faceapi.LabeledFaceDescriptors[];
       setLabeledDescriptors(validDescriptors);
+      // Pre-build the matcher once
+      if (validDescriptors.length > 0) {
+        faceMatcherRef.current = new faceapi.FaceMatcher(validDescriptors, 0.55);
+      }
       console.log(`Loaded ${validDescriptors.length} student descriptors`);
     } catch (error) {
       console.error("Failed to load student descriptors:", error);
