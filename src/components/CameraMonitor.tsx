@@ -109,24 +109,52 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
     };
   }, [isActive, modelsLoaded]);
 
+  // Downscale video frame for faster processing
+  const getDownscaledInput = () => {
+    if (!videoRef.current) return null;
+    const video = videoRef.current;
+    if (video.videoWidth === 0 || video.videoHeight === 0) return null;
+    
+    // Process at 320px width for speed
+    const scale = 320 / video.videoWidth;
+    const w = Math.round(video.videoWidth * scale);
+    const h = Math.round(video.videoHeight * scale);
+    
+    if (!offscreenCanvasRef.current) {
+      offscreenCanvasRef.current = document.createElement('canvas');
+    }
+    const oc = offscreenCanvasRef.current;
+    oc.width = w;
+    oc.height = h;
+    const ctx = oc.getContext('2d');
+    if (!ctx) return null;
+    ctx.drawImage(video, 0, 0, w, h);
+    return { canvas: oc, scale };
+  };
+
   const detectFaces = async () => {
-    if (!videoRef.current || !canvasRef.current) return;
+    if (isDetectingRef.current || !videoRef.current || !canvasRef.current) return;
+    isDetectingRef.current = true;
     
     try {
+      const input = getDownscaledInput();
+      if (!input) { isDetectingRef.current = false; return; }
+      
       const detections = await faceapi.detectAllFaces(
-        videoRef.current,
+        input.canvas,
         new faceapi.SsdMobilenetv1Options({ minConfidence: 0.4 })
       ).withFaceLandmarks().withFaceDescriptors();
       
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
+      const invScale = 1 / input.scale;
       if (ctx) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         detections.forEach(detection => {
           const { x, y, width, height } = detection.detection.box;
           ctx.strokeStyle = '#00ff00';
           ctx.lineWidth = 2;
-          ctx.strokeRect(x, y, width, height);
+          ctx.strokeRect(x * invScale, y * invScale, width * invScale, height * invScale);
         });
       }
 
@@ -148,6 +176,8 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
       
     } catch (error) {
       console.log('Face detection error:', error);
+    } finally {
+      isDetectingRef.current = false;
     }
   };
 
@@ -155,7 +185,7 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
     try {
       setCameraError(null);
       const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { width: 640, height: 480 } 
+        video: { width: 640, height: 480, facingMode: 'user' } 
       });
       setStream(mediaStream);
       
@@ -168,8 +198,8 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
             canvasRef.current.height = videoRef.current.videoHeight;
           }
           
-          // Detect every 800ms for faster response
-          detectionIntervalRef.current = setInterval(detectFaces, 800);
+          // Detect every 500ms with guard against overlap
+          detectionIntervalRef.current = window.setInterval(detectFaces, 500);
         };
       }
     } catch (error) {
