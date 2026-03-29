@@ -75,6 +75,8 @@ const Index = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const alertedStudentsThisHourRef = useRef<Set<string>>(new Set());
   const autoMarkedStudentsRef = useRef<Set<string>>(new Set());
+  const attendanceSubmittedRef = useRef(false);
+  const autoMarkingActiveRef = useRef(false);
 
   // Update current time every second and reset hourly alerts tracker
   useEffect(() => {
