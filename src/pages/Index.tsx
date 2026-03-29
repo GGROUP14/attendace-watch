@@ -75,6 +75,8 @@ const Index = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const alertedStudentsThisHourRef = useRef<Set<string>>(new Set());
   const autoMarkedStudentsRef = useRef<Set<string>>(new Set());
+  const attendanceSubmittedRef = useRef(false);
+  const autoMarkingActiveRef = useRef(false);
 
   // Update current time every second and reset hourly alerts tracker
   useEffect(() => {
@@ -127,14 +129,14 @@ const Index = () => {
       if (!detectedStudent) return;
       
       // Auto-mark attendance only when autoMarkingActive (before submit)
-      if (autoMarkingActive && !attendanceSubmitted && !detectedStudent.isPresent && !autoMarkedStudentsRef.current.has(detectedStudent.id)) {
+      if (autoMarkingActiveRef.current && !attendanceSubmittedRef.current && !detectedStudent.isPresent && !autoMarkedStudentsRef.current.has(detectedStudent.id)) {
         autoMarkedStudentsRef.current.add(detectedStudent.id);
         handleAttendanceChange(detectedStudent.id, true);
         sonnerToast.success(`✅ ${detectedStudent.name} marked present via face recognition`);
       }
       
       // Post-submission monitoring: alert if recognized student is absent without permission
-      if (attendanceSubmitted && !detectedStudent.isPresent && !detectedStudent.hasPermission && !alertedStudentsThisHourRef.current.has(detectedStudent.id)) {
+      if (attendanceSubmittedRef.current && !detectedStudent.isPresent && !detectedStudent.hasPermission && !alertedStudentsThisHourRef.current.has(detectedStudent.id)) {
         alertedStudentsThisHourRef.current.add(detectedStudent.id);
         
         const alertTime = new Date().toLocaleTimeString();
@@ -239,7 +241,9 @@ const Index = () => {
   // Handle auto-mark attendance via camera
   const handleMarkAttendance = () => {
     setAttendanceSubmitted(false);
+    attendanceSubmittedRef.current = false;
     setAutoMarkingActive(true);
+    autoMarkingActiveRef.current = true;
     autoMarkedStudentsRef.current = new Set();
     alertedStudentsThisHourRef.current = new Set();
     setAlerts([]);
@@ -254,7 +258,9 @@ const Index = () => {
 
   const handleSubmitAttendance = () => {
     setAttendanceSubmitted(true);
+    attendanceSubmittedRef.current = true;
     setAutoMarkingActive(false);
+    autoMarkingActiveRef.current = false;
     setCameraActive(true);
     
     // Clear any existing alerts and reset hourly tracker
