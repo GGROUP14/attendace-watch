@@ -111,18 +111,15 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
     if (!videoRef.current || !canvasRef.current) return;
     
     try {
-      // Use larger input size and lower threshold for better accuracy
       const detections = await faceapi.detectAllFaces(
         videoRef.current,
-        new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: 0.3 })
+        new faceapi.SsdMobilenetv1Options({ minConfidence: 0.4 })
       ).withFaceLandmarks().withFaceDescriptors();
       
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Draw detection boxes
         detections.forEach(detection => {
           const { x, y, width, height } = detection.detection.box;
           ctx.strokeStyle = '#00ff00';
@@ -133,16 +130,12 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
 
       let detectedStudentId: string | undefined;
 
-      if (detections.length > 0 && labeledDescriptors && labeledDescriptors.length > 0) {
-        // Use higher tolerance (0.5) for better matching
-        const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.5);
-        
+      if (detections.length > 0 && faceMatcherRef.current) {
         detections.forEach((detection) => {
-          const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
-          
+          const bestMatch = faceMatcherRef.current!.findBestMatch(detection.descriptor);
           if (bestMatch.label !== 'unknown') {
             detectedStudentId = bestMatch.label;
-            console.log(`Recognized student: ${bestMatch.label} (distance: ${bestMatch.distance.toFixed(2)})`);
+            console.log(`Recognized: ${bestMatch.label} (dist: ${bestMatch.distance.toFixed(2)})`);
           }
         });
       }
@@ -152,10 +145,7 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
       onFaceDetected(hasFaces, detectedStudentId);
       
     } catch (error) {
-      console.log('Face detection error, using fallback:', error);
-      const hasMotion = Math.random() < 0.15;
-      setFaceDetected(hasMotion);
-      onFaceDetected(hasMotion);
+      console.log('Face detection error:', error);
     }
   };
 
