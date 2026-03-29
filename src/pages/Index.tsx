@@ -136,7 +136,7 @@ const Index = () => {
       }
       
       // Post-submission monitoring: alert if recognized student is absent without permission
-      if (attendanceSubmitted && !detectedStudent.isPresent && !detectedStudent.hasPermission && !alertedStudentsThisHourRef.current.has(detectedStudent.id)) {
+      if (attendanceSubmittedRef.current && !detectedStudent.isPresent && !detectedStudent.hasPermission && !alertedStudentsThisHourRef.current.has(detectedStudent.id)) {
         alertedStudentsThisHourRef.current.add(detectedStudent.id);
         
         const alertTime = new Date().toLocaleTimeString();
