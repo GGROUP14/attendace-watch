@@ -77,6 +77,12 @@ const Index = () => {
   const autoMarkedStudentsRef = useRef<Set<string>>(new Set());
   const attendanceSubmittedRef = useRef(false);
   const autoMarkingActiveRef = useRef(false);
+  const studentsRef = useRef<Student[]>([]);
+
+  // Keep studentsRef in sync
+  useEffect(() => {
+    studentsRef.current = students;
+  }, [students]);
 
   // Update current time every second and reset hourly alerts tracker
   useEffect(() => {
@@ -125,7 +131,7 @@ const Index = () => {
     if (!detected || !cameraActive) return;
     
     if (detectedStudentId) {
-      const detectedStudent = students.find(s => s.id === detectedStudentId);
+      const detectedStudent = studentsRef.current.find(s => s.id === detectedStudentId);
       if (!detectedStudent) return;
       
       // Auto-mark attendance only when autoMarkingActive (before submit)
