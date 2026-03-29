@@ -129,7 +129,7 @@ const Index = () => {
       if (!detectedStudent) return;
       
       // Auto-mark attendance only when autoMarkingActive (before submit)
-      if (autoMarkingActive && !attendanceSubmitted && !detectedStudent.isPresent && !autoMarkedStudentsRef.current.has(detectedStudent.id)) {
+      if (autoMarkingActiveRef.current && !attendanceSubmittedRef.current && !detectedStudent.isPresent && !autoMarkedStudentsRef.current.has(detectedStudent.id)) {
         autoMarkedStudentsRef.current.add(detectedStudent.id);
         handleAttendanceChange(detectedStudent.id, true);
         sonnerToast.success(`✅ ${detectedStudent.name} marked present via face recognition`);
