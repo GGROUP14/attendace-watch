@@ -131,7 +131,7 @@ const Index = () => {
     if (!detected || !cameraActive) return;
     
     if (detectedStudentId) {
-      const detectedStudent = students.find(s => s.id === detectedStudentId);
+      const detectedStudent = studentsRef.current.find(s => s.id === detectedStudentId);
       if (!detectedStudent) return;
       
       // Auto-mark attendance only when autoMarkingActive (before submit)
