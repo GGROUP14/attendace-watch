@@ -37,23 +37,21 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
   const [faceDetected, setFaceDetected] = useState(false);
   const detectionIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [labeledDescriptors, setLabeledDescriptors] = useState<faceapi.LabeledFaceDescriptors[] | null>(null);
+  const faceMatcherRef = useRef<faceapi.FaceMatcher | null>(null);
 
-  // Load face-api.js models and student descriptors
+  // Load face-api.js models
   useEffect(() => {
     const loadModels = async () => {
       try {
         await Promise.all([
-          faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+          faceapi.nets.ssdMobilenetv1.loadFromUri('/models'),
           faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
           faceapi.nets.faceRecognitionNet.loadFromUri('/models')
         ]);
         setModelsLoaded(true);
-        
-        // Load student face descriptors
         await loadStudentDescriptors();
       } catch (error) {
         console.error('Error loading face detection models:', error);
-        // Continue without models - will fall back to basic detection
         setModelsLoaded(true);
       }
     };
@@ -69,9 +67,8 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
         students.map(async (student) => {
           try {
             const img = await faceapi.fetchImage(student.image);
-            // Use larger input size and lower threshold for better detection
             const detection = await faceapi
-              .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: 0.3 }))
+              .detectSingleFace(img, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.3 }))
               .withFaceLandmarks()
               .withFaceDescriptor();
             
@@ -88,6 +85,10 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
       
       const validDescriptors = descriptors.filter(d => d !== null) as faceapi.LabeledFaceDescriptors[];
       setLabeledDescriptors(validDescriptors);
+      // Pre-build the matcher once
+      if (validDescriptors.length > 0) {
+        faceMatcherRef.current = new faceapi.FaceMatcher(validDescriptors, 0.55);
+      }
       console.log(`Loaded ${validDescriptors.length} student descriptors`);
     } catch (error) {
       console.error("Failed to load student descriptors:", error);
@@ -110,18 +111,15 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
     if (!videoRef.current || !canvasRef.current) return;
     
     try {
-      // Use larger input size and lower threshold for better accuracy
       const detections = await faceapi.detectAllFaces(
         videoRef.current,
-        new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: 0.3 })
+        new faceapi.SsdMobilenetv1Options({ minConfidence: 0.4 })
       ).withFaceLandmarks().withFaceDescriptors();
       
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Draw detection boxes
         detections.forEach(detection => {
           const { x, y, width, height } = detection.detection.box;
           ctx.strokeStyle = '#00ff00';
@@ -132,16 +130,12 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
 
       let detectedStudentId: string | undefined;
 
-      if (detections.length > 0 && labeledDescriptors && labeledDescriptors.length > 0) {
-        // Use higher tolerance (0.5) for better matching
-        const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.5);
-        
+      if (detections.length > 0 && faceMatcherRef.current) {
         detections.forEach((detection) => {
-          const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
-          
+          const bestMatch = faceMatcherRef.current!.findBestMatch(detection.descriptor);
           if (bestMatch.label !== 'unknown') {
             detectedStudentId = bestMatch.label;
-            console.log(`Recognized student: ${bestMatch.label} (distance: ${bestMatch.distance.toFixed(2)})`);
+            console.log(`Recognized: ${bestMatch.label} (dist: ${bestMatch.distance.toFixed(2)})`);
           }
         });
       }
@@ -151,10 +145,7 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
       onFaceDetected(hasFaces, detectedStudentId);
       
     } catch (error) {
-      console.log('Face detection error, using fallback:', error);
-      const hasMotion = Math.random() < 0.15;
-      setFaceDetected(hasMotion);
-      onFaceDetected(hasMotion);
+      console.log('Face detection error:', error);
     }
   };
 
@@ -175,8 +166,8 @@ export const CameraMonitor = ({ isActive, onToggleCamera, alerts, onFaceDetected
             canvasRef.current.height = videoRef.current.videoHeight;
           }
           
-          // Start face detection every 1.5 seconds for better processing
-          detectionIntervalRef.current = setInterval(detectFaces, 1500);
+          // Detect every 800ms for faster response
+          detectionIntervalRef.current = setInterval(detectFaces, 800);
         };
       }
     } catch (error) {
