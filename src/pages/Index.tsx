@@ -241,7 +241,9 @@ const Index = () => {
   // Handle auto-mark attendance via camera
   const handleMarkAttendance = () => {
     setAttendanceSubmitted(false);
+    attendanceSubmittedRef.current = false;
     setAutoMarkingActive(true);
+    autoMarkingActiveRef.current = true;
     autoMarkedStudentsRef.current = new Set();
     alertedStudentsThisHourRef.current = new Set();
     setAlerts([]);
