@@ -7,7 +7,7 @@ import { ClassSchedule } from "@/components/ClassSchedule";
 import { CameraMonitor } from "@/components/CameraMonitor";
 import { AttendanceStats } from "@/components/AttendanceStats";
 import { AddStudentForm } from "@/components/AddStudentForm";
-import { GraduationCap, Save, AlertCircle, ScanFace, LogOut } from "lucide-react";
+import { GraduationCap, Save, AlertCircle, ScanFace } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast as sonnerToast } from "sonner";
 
@@ -335,14 +335,6 @@ const Index = () => {
               >
                 <Save className="h-4 w-4 mr-2" />
                 Submit Attendance
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={async () => { await supabase.auth.signOut(); }}
-                title="Sign out"
-              >
-                <LogOut className="h-4 w-4" />
               </Button>
             </div>
           </div>
