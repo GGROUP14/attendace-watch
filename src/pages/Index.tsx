@@ -7,9 +7,10 @@ import { ClassSchedule } from "@/components/ClassSchedule";
 import { CameraMonitor } from "@/components/CameraMonitor";
 import { AttendanceStats } from "@/components/AttendanceStats";
 import { AddStudentForm } from "@/components/AddStudentForm";
-import { GraduationCap, Save, AlertCircle, ScanFace } from "lucide-react";
+import { GraduationCap, Save, AlertCircle, ScanFace, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast as sonnerToast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 // Import student images
 import studentBresto from "@/assets/student-bresto.jpg";
@@ -78,6 +79,12 @@ const Index = () => {
   const attendanceSubmittedRef = useRef(false);
   const autoMarkingActiveRef = useRef(false);
   const studentsRef = useRef<Student[]>([]);
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("isLoggedIn");
+    navigate("/login");
+  };
 
   // Keep studentsRef in sync
   useEffect(() => {
@@ -335,6 +342,9 @@ const Index = () => {
               >
                 <Save className="h-4 w-4 mr-2" />
                 Submit Attendance
+              </Button>
+              <Button onClick={handleLogout} variant="ghost" size="icon" aria-label="Log out">
+                <LogOut className="h-4 w-4" />
               </Button>
             </div>
           </div>
