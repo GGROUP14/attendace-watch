@@ -169,7 +169,7 @@ const Index = () => {
           body: {
             studentName: detectedStudent.name,
             timestamp: alertTime,
-            message: `${detectedStudent.name} was detected in the classroom but is marked absent without permission.`,
+            message: `${detectedStudent.name} has not attended the class.`,
           },
         }).then(({ error }) => {
           if (error) {
