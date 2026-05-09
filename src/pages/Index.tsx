@@ -338,7 +338,7 @@ const Index = () => {
                 <GraduationCap className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold">Classroom Attendance System</h1>
+                <h1 className="text-2xl font-bold">EDUGUARD</h1>
                 <p className="text-sm text-muted-foreground">
                   {currentTime.toLocaleDateString()} • {currentTime.toLocaleTimeString()}
                 </p>
