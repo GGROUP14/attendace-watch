@@ -79,6 +79,12 @@ const Index = () => {
   const attendanceSubmittedRef = useRef(false);
   const autoMarkingActiveRef = useRef(false);
   const studentsRef = useRef<Student[]>([]);
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("isLoggedIn");
+    navigate("/login");
+  };
 
   // Keep studentsRef in sync
   useEffect(() => {
