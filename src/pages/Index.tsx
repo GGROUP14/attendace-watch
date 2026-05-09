@@ -162,7 +162,7 @@ const Index = () => {
         
         setAlerts(prev => [newAlert, ...prev]);
         
-        sonnerToast.warning(`⚠️ ${detectedStudent.name} detected but marked absent without permission!`);
+        sonnerToast.warning(`⚠️ ${detectedStudent.name} has not attended the class!`);
         
         // Send alert email
         supabase.functions.invoke('send-alert-email', {
