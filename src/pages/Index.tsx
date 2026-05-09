@@ -407,7 +407,7 @@ const Index = () => {
             {/* Sidebar */}
             <div className="space-y-6">
               <AddStudentForm onStudentAdded={fetchStudents} />
-              <ClassSchedule />
+              <ClassSchedule students={students} />
               <CameraMonitor
                 isActive={cameraActive}
                 onToggleCamera={toggleCamera}
