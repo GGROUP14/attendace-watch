@@ -252,7 +252,26 @@ const Index = () => {
   };
 
   // Handle auto-mark attendance via camera
-  const handleMarkAttendance = () => {
+  const handleMarkAttendance = async () => {
+    // Clear previous attendance & permissions for all students
+    const { error } = await supabase
+      .from("students")
+      .update({ is_present: false, has_permission: false })
+      .neq("id", "00000000-0000-0000-0000-000000000000");
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to reset previous attendance.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setStudents((prev) =>
+      prev.map((s) => ({ ...s, isPresent: false, hasPermission: false }))
+    );
+
     setAttendanceSubmitted(false);
     attendanceSubmittedRef.current = false;
     setAutoMarkingActive(true);
@@ -261,10 +280,10 @@ const Index = () => {
     alertedStudentsThisHourRef.current = new Set();
     setAlerts([]);
     setCameraActive(true);
-    
+
     toast({
       title: "📸 Auto Attendance Started",
-      description: "Camera is active. Students will be marked present when recognized.",
+      description: "Previous records cleared. Camera is active.",
       duration: 3000,
     });
   };
