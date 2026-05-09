@@ -157,7 +157,7 @@ const Index = () => {
           id: `${detectedStudent.id}-${Date.now()}`,
           studentName: detectedStudent.name,
           timestamp: alertTime,
-          message: `${detectedStudent.name} detected but marked absent without permission!`,
+          message: `${detectedStudent.name} has not attended the class!`,
         };
         
         setAlerts(prev => [newAlert, ...prev]);
